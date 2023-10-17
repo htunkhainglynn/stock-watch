@@ -1,8 +1,7 @@
 var express = require('express');
 var router = express.Router();
+const stocks = require('../controller/StockController');
 
-router.get('/', function(req, res, next) {
-  res.send('hello from stock');
-});
+router.get('/', stocks.getStockBySymbolHandler);
 
 module.exports = router;
