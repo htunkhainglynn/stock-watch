@@ -1,5 +1,5 @@
+const BuyStockDto = require('../dto/buyStock');
 const stockService = require('../service/StockService');
-const {json} = require("express");
 
 async function getStockBySymbolHandler(req, res, next) {
     const symbol = req.query['symbol'];
@@ -10,6 +10,18 @@ async function getStockBySymbolHandler(req, res, next) {
     await res.status(200).json(stock);
 }
 
+async function buyStockHandler(req, res, next) {
+    const buyStockDto = new BuyStockDto(req.body);
+
+    const stock = await stockService.buyStock(buyStockDto);
+
+    if(!stock) {
+        res.status(404).json({error: 'Stock not found'});
+    }
+    await res.status(200).json(stock);
+}
+
 module.exports = {
-    getStockBySymbolHandler
+    getStockBySymbolHandler,
+    buyStockHandler
 };

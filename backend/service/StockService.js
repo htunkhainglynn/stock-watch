@@ -1,5 +1,6 @@
 const finnhub = require('finnhub');
 const util = require('util');
+const Stock = require('../model/Stock');
 
 const finnhubClient = new finnhub.DefaultApi();
 const symbolSearchPromise = util.promisify(finnhubClient.symbolSearch).bind(finnhubClient);
@@ -27,6 +28,30 @@ async function getStockBySymbol(symbol) {
     }
 }
 
+async function buyStock(buyStockDto) {
+    try {
+        const symbolSearchPromiseResult = symbolSearchPromise(buyStockDto.symbol.toUpperCase());
+        const quotePromiseResult = quotePromise(buyStockDto.symbol.toUpperCase());
+
+        const [symbolSearchResult, quoteResult] = await Promise.all([symbolSearchPromiseResult, quotePromiseResult]);
+
+        const newStock = new Stock({
+            company: symbolSearchResult.result[0].description,
+            symbol: symbolSearchResult.result[0].symbol,
+            quantity: buyStockDto.quantity,
+            purchasePrice: quoteResult.c,
+            user: buyStockDto.userId
+        });
+
+        await newStock.save();
+        return newStock.populate('User');
+    } catch (error) {
+        return undefined;
+    }
+}
+
+
 module.exports = {
-    getStockBySymbol
+    getStockBySymbol,
+    buyStock
 };

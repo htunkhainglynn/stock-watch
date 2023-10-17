@@ -23,9 +23,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+mongoose.connect(db, {useNewUrlParser: true, useUnifiedTopology: true})
+    .then(() => console.log('Connected to MongoDB.'))
+    .catch(err => console.log('Could not connect to MongoDB.', err));
+
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/stocks', stockRouter);
+app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/stocks', stockRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
