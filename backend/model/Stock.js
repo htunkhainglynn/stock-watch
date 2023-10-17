@@ -23,6 +23,10 @@ const stockSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User'
+    },
+    purchaseDate: {
+        type: String,
+        default: new Date().toLocaleDateString("en-Us", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
     }
 });
 

@@ -13,12 +13,13 @@ async function getStockBySymbolHandler(req, res, next) {
 async function buyStockHandler(req, res, next) {
     const buyStockDto = new BuyStockDto(req.body);
 
-    const stock = await stockService.buyStock(buyStockDto);
-
-    if(!stock) {
-        res.status(404).json({error: 'Stock not found'});
+    try{
+        const stock = await stockService.buyStock(buyStockDto);
+        res.status(200).json(stock);
     }
-    await res.status(200).json(stock);
+    catch {
+        res.status(400).json({error: 'Error buying stock'});
+    }
 }
 
 module.exports = {
