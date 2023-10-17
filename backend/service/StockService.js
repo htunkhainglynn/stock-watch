@@ -7,7 +7,6 @@ const mongoose = require('mongoose');
 const finnhubClient = new finnhub.DefaultApi();
 const symbolSearchPromise = util.promisify(finnhubClient.symbolSearch).bind(finnhubClient);
 const quotePromise = util.promisify(finnhubClient.quote).bind(finnhubClient);
-
 const api_key = finnhub.ApiClient.instance.authentications['api_key'];
 api_key.apiKey = "ckm1ef9r01qu6et4ri10ckm1ef9r01qu6et4ri1g"
 
