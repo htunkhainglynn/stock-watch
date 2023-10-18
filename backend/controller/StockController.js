@@ -17,13 +17,19 @@ async function buyStockHandler(req, res, next) {
         const stock = await stockService.buyStock(buyStockDto);
         res.status(200).json(stock);
     }
-    catch {
-        res.status(400).json({error: 'Error buying stock'});
+    catch(error) {
+        res.status(400).json({error: error.message});
     }
 }
 
-async function sellStockHandler() {
-    
+async function sellStockHandler(req, res, next) {
+    try {
+        const stock = await stockService.sellStock(req.body);
+        res.status(200).json(stock);
+    }
+    catch (error) {
+        res.status(400).json({error: error.message});
+    }
 }
 
 module.exports = {

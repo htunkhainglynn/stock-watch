@@ -18,11 +18,13 @@ async function getStockBySymbol(symbol) {
         const symbolSearchPromiseResult = symbolSearchPromise(symbol.toUpperCase());
         const quotePromiseResult = quotePromise(symbol.toUpperCase());
 
-        const [symbolSearchResult, quoteResult] = await Promise.all([symbolSearchPromiseResult, quotePromiseResult]);
+        let [symbolSearchResult, quoteResult] = await Promise.all([symbolSearchPromiseResult, quotePromiseResult]);
 
-        result.companyName = symbolSearchResult.result[0].description;
+        symbolSearchResult = symbolSearchResult.result.filter(result => result.symbol === symbol.toUpperCase())[0];
+
+        result.companyName = symbolSearchResult.description;
         result.currentPrice = quoteResult.c;
-        result.symbol = symbolSearchResult.result[0].symbol;
+        result.symbol = symbolSearchResult.symbol;
 
         return result;
     } catch (error) {
@@ -37,13 +39,18 @@ async function buyStock(buyStockDto) {
     let [symbolSearchResult, quoteResult] = await Promise.all([symbolSearchPromiseResult, quotePromiseResult]);
 
     symbolSearchResult = symbolSearchResult.result.filter(result => result.symbol === buyStockDto.symbol.toUpperCase())[0];
+    
+    if (!symbolSearchResult) {
+        throw new Error('Stock not found');
+    }
 
     // add to history
     const history = new History({
         company: symbolSearchResult.description,
         symbol: symbolSearchResult.symbol,
         quantity: buyStockDto.quantity,
-        purchasePrice: quoteResult.c,
+        price: quoteResult.c,
+        type: 'buy',
         user: mongoose.isValidObjectId(buyStockDto.user)
             ? buyStockDto.user : new mongoose.Types.ObjectId(buyStockDto.user)  // above mongoose version 6
     });
@@ -84,7 +91,53 @@ async function buyStock(buyStockDto) {
     return existingStock || newStock;
 }
 
+async function sellStock(body) {
+    // find stock based on symbol and user
+    const stock = await Stock.findOne({ symbol: body.symbol, user: body.user });
+    const user = await User.findById(body.user);
+
+    if (!stock || stock.quantity < body.quantity) {
+        throw new Error('Insufficient stocks');
+    }
+
+    const currentPrice = await getCurrentPrice(body.symbol);
+
+    // add to history
+    const history = new History({
+        company: stock.company,
+        symbol: stock.symbol,
+        quantity: body.quantity,
+        price: currentPrice,
+        type: 'sell',
+        user: mongoose.isValidObjectId(body.user) ? body.user : new mongoose.Types.ObjectId(body.user)  // above mongoose version 6
+    });
+
+    await history.save();
+
+    // update user balance and stock quantity
+    user.balance += currentPrice * body.quantity;
+    await user.save();
+
+    // delete stock if quantity is 0
+    stock.quantity -= body.quantity;
+    await stock.save();
+
+    if (stock.quantity === 0) {
+        await Stock.deleteOne({ symbol: body.symbol, user: body.user });
+    }
+
+    // return stock
+    return stock;
+}
+
+async function getCurrentPrice(symbol) {
+    const quoteResult = await quotePromise(symbol.toUpperCase());
+    return quoteResult.c;
+}
+
+
 module.exports = {
     getStockBySymbol,
-    buyStock
+    buyStock,
+    sellStock
 };

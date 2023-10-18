@@ -18,13 +18,16 @@ const historySchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User'
     },
-    purchasePrice: {
+    price: {
         type: Number,
         required: true
     },
     purchaseDate: {
         type: String,
         default: new Date().toLocaleDateString("en-Us", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
+    },
+    type: {
+        type: String
     }
 });
 
