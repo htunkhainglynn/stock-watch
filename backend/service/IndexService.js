@@ -12,6 +12,7 @@ async function getData(user) {
     const userId = user.user;
     
     const stocks = await Stock.find({ user: userId });
+    const userBalance = await User.findById({ _id: userId }).select('balance');
 
     // Create an array of promises for fetching current prices
     const currentPricePromises = stocks.map(stock => getCurrentPrice(stock.symbol));
@@ -19,29 +20,17 @@ async function getData(user) {
     // Wait for all current prices to be resolved
     const currentPrices = await Promise.all(currentPricePromises);
 
-    const stockList = [];
-
-    stocks.forEach((stock, index) => {
-        const existingStock = stockList.find(item => item.symbol === stock.symbol);
-        if (existingStock) {
-            existingStock.quantity += stock.quantity;
-        } else {
-            stockList.push({
+    return {
+        stocks: stocks.map((stock, index) => {
+            return {
                 symbol: stock.symbol,
                 quantity: stock.quantity,
-                company: stock.company,
                 currentPrice: currentPrices[index],
-            });
-        }
-    });
-
-    // get user balance
-    const balance = await User.findById(userId).select('balance');
-
-    return {
-        balance: Math.ceil(balance.balance * 100) / 100,
-        stocks: stockList
-    };
+                companyName: stock.company
+            }
+        }),
+        currentBalance: Math.round(userBalance.balance * 100) / 100,
+    }
 }
 
 async function getCurrentPrice(symbol) {

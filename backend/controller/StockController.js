@@ -22,7 +22,12 @@ async function buyStockHandler(req, res, next) {
     }
 }
 
+async function sellStockHandler() {
+    
+}
+
 module.exports = {
     getStockBySymbolHandler,
-    buyStockHandler
+    buyStockHandler,
+    sellStockHandler
 };

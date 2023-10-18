@@ -8,25 +8,16 @@ const stockSchema = new Schema({
     },
     symbol: {
         type: String,
-        required: true
+        required: true,
+        unique: true,
     },
     quantity: {
-        type: Number,
-        required: true,
-        min: 1,
-        default: 1
-    },
-    purchasePrice: {
         type: Number,
         required: true
     },
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User'
-    },
-    purchaseDate: {
-        type: String,
-        default: new Date().toLocaleDateString("en-Us", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
     }
 });
 

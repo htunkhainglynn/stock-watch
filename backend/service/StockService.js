@@ -2,6 +2,7 @@ const finnhub = require('finnhub');
 const util = require('util');
 const Stock = require('../model/Stock');
 const User = require('../model/User');
+const History = require('../model/History');
 const mongoose = require('mongoose');
 
 const finnhubClient = new finnhub.DefaultApi();
@@ -33,19 +34,38 @@ async function buyStock(buyStockDto) {
     const symbolSearchPromiseResult = symbolSearchPromise(buyStockDto.symbol.toUpperCase());
     const quotePromiseResult = quotePromise(buyStockDto.symbol.toUpperCase());
 
-    const [symbolSearchResult, quoteResult] = await Promise.all([symbolSearchPromiseResult, quotePromiseResult]);
+    let [symbolSearchResult, quoteResult] = await Promise.all([symbolSearchPromiseResult, quotePromiseResult]);
 
-    console.log(buyStockDto.user);
+    symbolSearchResult = symbolSearchResult.result.filter(result => result.symbol === buyStockDto.symbol.toUpperCase())[0];
 
-    const newStock = new Stock({
-        company: symbolSearchResult.result[0].description,
-        symbol: symbolSearchResult.result[0].symbol,
+    // add to history
+    const history = new History({
+        company: symbolSearchResult.description,
+        symbol: symbolSearchResult.symbol,
         quantity: buyStockDto.quantity,
         purchasePrice: quoteResult.c,
         user: mongoose.isValidObjectId(buyStockDto.user)
             ? buyStockDto.user : new mongoose.Types.ObjectId(buyStockDto.user)  // above mongoose version 6
     });
-    await newStock.save();
+
+    await history.save();
+
+    // find existing stock, if exists, update quantity, else create new stock
+    let newStock = {};
+    const existingStock = await Stock.findOne({ symbol: symbolSearchResult.symbol, user: buyStockDto.user });
+    if (existingStock) {
+        existingStock.quantity += buyStockDto.quantity;
+        await existingStock.save();
+    } else {
+        newStock = new Stock({
+            company: symbolSearchResult.description,
+            symbol: symbolSearchResult.symbol,
+            quantity: buyStockDto.quantity,
+            user: mongoose.isValidObjectId(buyStockDto.user)
+                ? buyStockDto.user : new mongoose.Types.ObjectId(buyStockDto.user)  // above mongoose version 6
+        });
+        await newStock.save();
+    }
 
     // update user balance
     const user = await User.findById(buyStockDto.user);
@@ -61,7 +81,7 @@ async function buyStock(buyStockDto) {
     user.balance -= cost;
     await user.save();
 
-    return newStock;
+    return existingStock || newStock;
 }
 
 module.exports = {
